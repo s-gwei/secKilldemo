@@ -1,11 +1,10 @@
 package com.sun.demo.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.sun.demo.pojo.Goods;
-import com.sun.demo.vo.GoodsVo;
+import com.sun.demo.pojo.SeckillOrder;
+import com.sun.demo.pojo.User;
+import org.springframework.stereotype.Repository;
 
-
-import java.util.List;
 
 /**
  * <p>
@@ -18,21 +17,19 @@ import java.util.List;
  * @author zhoubin
  *
  */
-public interface IGoodsService extends IService<Goods> {
+@Repository
+public interface ISeckillOrderService extends IService<SeckillOrder> {
 
 	/**
-	 * 功能描述: 获取商品列表
+	 * 功能描述: 获取秒杀结果
 	 *
 	 * @param:
-	 * @return:
+	 * @return:orderId:成功，-1：秒杀失败，0：排队中
 	 *
 	 * 乐字节：专注线上IT培训
 	 * 答疑老师微信：lezijie
 	 * @since: 1.0.0
 	 * @Author:zhoubin
 	 */
-	List<GoodsVo> findGoodsVo();
-
-
-	GoodsVo findGoodsVoByGoodsId(Long goodsId);
+	Long getResult(User user, Long goodsId);
 }
