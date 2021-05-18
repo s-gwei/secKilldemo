@@ -11,6 +11,10 @@ import javax.servlet.http.HttpServletResponse;
 
 
 public interface IUserService extends IService<User> {
+
+    int saveUserCount(Long userid);
+
+    boolean getUserCount(Long userid);
     RespBean doLogin(LoginVo loginVo, HttpServletRequest request, HttpServletResponse response);
 
     /**

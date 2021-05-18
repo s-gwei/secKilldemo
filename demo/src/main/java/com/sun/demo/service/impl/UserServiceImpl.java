@@ -18,6 +18,7 @@ import org.springframework.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IUserService {
@@ -29,33 +30,72 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     private RedisTemplate redisTemplate;
 
     @Override
+    public int saveUserCount(Long userid) {
+        //根据不同用户id生成调用次数的key
+        String limitKey = "LIMIT" + "_" + userid;
+
+        //获取redis中指定key的调用次数
+        String limitNum = (String) redisTemplate.opsForValue().get(limitKey);
+        int limit =-1;
+        if (limitNum == null) {
+            //第一次调用放入redis中设置为0
+            redisTemplate.opsForValue().set(limitKey, "0", 2, TimeUnit.SECONDS);
+        } else {
+            //不是第一次调用每次+1
+            limit = Integer.parseInt(limitNum) + 1;
+            redisTemplate.opsForValue().set(limitKey, String.valueOf(limit), 2, TimeUnit.SECONDS);
+        }
+        return limit;//返回调用次数
+    }
+
+    @Override
+    public boolean getUserCount(Long userId) {
+        //根据userid对应key获取调用次数
+        String limitKey = "LIMIT"+ "_" + userId;
+        //跟库用户调用次数的key获取redis中调用次数
+        String limitNum = (String) redisTemplate.opsForValue().get(limitKey);
+        if (limitNum == null) {
+            //为空直接抛弃说明key出现异常
+            log.error("该用户没有访问申请验证值记录，疑似异常");
+            return true;
+        }
+        return Integer.parseInt(limitNum) > 3; //false代表没有超过 true代表超过
+    }
+
+    @Override
     public RespBean doLogin(LoginVo loginVo, HttpServletRequest request, HttpServletResponse response) {
-        String mobile = loginVo.getMobile();
-        String password = loginVo.getPassword();
-        // //参数校验
-        // if (StringUtils.isEmpty(mobile)||StringUtils.isEmpty(password)){
-        // 	return RespBean.error(RespBeanEnum.LOGIN_ERROR);
-        // }
-        // if (!ValidatorUtil.isMobile(mobile)){
-        // 	return RespBean.error(RespBeanEnum.MOBILE_ERROR);
-        // }
-        //根据手机号获取用户
-        User user = userMapper.selectById(mobile);
-        if (null == user) {
-            throw new GlobalException(RespBeanEnum.LOGIN_ERROR);
+        String ticket = CookieUtil.getCookieValue(request,"userTicket");
+        User user = (User) redisTemplate.opsForValue().get("user:" + ticket);
+        if(user != null){
+            CookieUtil.setCookie(request, response, "userTicket", ticket);
+            return RespBean.success(ticket);
+        }else{
+            String mobile = loginVo.getMobile();
+            String password = loginVo.getPassword();
+            // //参数校验
+            // if (StringUtils.isEmpty(mobile)||StringUtils.isEmpty(password)){
+            // 	return RespBean.error(RespBeanEnum.LOGIN_ERROR);
+            // }
+            // if (!ValidatorUtil.isMobile(mobile)){
+            // 	return RespBean.error(RespBeanEnum.MOBILE_ERROR);
+            // }
+            //根据手机号获取用户
+             user = userMapper.selectById(mobile);
+            if (null == user) {
+                throw new GlobalException(RespBeanEnum.LOGIN_ERROR);
+            }
+            //判断密码是否正确
+            if (!MD5Util.formPassToDBPass(password, user.getSlat()).equals(user.getPassword())) {
+                throw new GlobalException(RespBeanEnum.LOGIN_ERROR);
+            }
+            //生成cookie
+             ticket = UUIDUtil.uuid();
+            //将用户信息存入redis中
+            redisTemplate.opsForValue().set("user:" + ticket, user);
+            // request.getSession().setAttribute(ticket,user);
+            CookieUtil.setCookie(request, response, "userTicket", ticket);
+            return RespBean.success(ticket);
         }
-        //判断密码是否正确
-        if (!MD5Util.formPassToDBPass(password, user.getSlat()).equals(user.getPassword())) {
-            throw new GlobalException(RespBeanEnum.LOGIN_ERROR);
-        }
-        //生成cookie
-        String ticket = UUIDUtil.uuid();
-        //将用户信息存入redis中
-        redisTemplate.opsForValue().set("user:" + ticket, user);
-        // request.getSession().setAttribute(ticket,user);
-        CookieUtil.setCookie(request, response, "userTicket", ticket);
-        return RespBean.success(ticket);
-//        return RespBean.success();
     }
 
     @Override

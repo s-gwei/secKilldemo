@@ -47,6 +47,15 @@ public class SeckillGoods implements Serializable {
      * 库存数量
      */
     private Integer stockCount;
+    /**
+     * 已售出数量
+     */
+    private Integer count;
+
+    /**
+     * 版本号
+     */
+    private Integer version;
 
     /**
      * 秒杀开始时间

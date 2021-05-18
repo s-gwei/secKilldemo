@@ -17,4 +17,5 @@ import com.sun.demo.pojo.SeckillGoods;
  */
 public interface ISeckillGoodsService extends IService<SeckillGoods> {
 
+    boolean updateCount(SeckillGoods seckillGoods);
 }

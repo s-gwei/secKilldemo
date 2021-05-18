@@ -33,7 +33,7 @@ public class UserArgumentResolver implements HandlerMethodArgumentResolver {
         HttpServletResponse response = webRequest.getNativeResponse(HttpServletResponse.class);
         String ticket = CookieUtil.getCookieValue(request,"userTicket");
         if(StringUtils.isEmpty(ticket)){
-            return null;
+            return "login";
         }
         return userService.getUserByCookie(ticket,request,response);
     }

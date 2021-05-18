@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.ui.Model;
 
 import java.util.Date;
 
@@ -43,12 +44,16 @@ public class IOrderServiceImpl extends ServiceImpl<IOrderMapper, Order> implemen
      */
     @Transactional
     @Override
-    public Order seckill(User user, GoodsVo goods) {
+    //
+    public synchronized Order seckill(User user, GoodsVo goods) {
 
         //秒杀商品减库存
-        SeckillGoods seckillGoods =  seckillGoodsService.getOne(new QueryWrapper<SeckillGoods>().eq("goods_id",goods.getId()));
+        SeckillGoods seckillGoods =  seckillGoodsService.getOne(new QueryWrapper<SeckillGoods>()
+                .eq("goods_id",goods.getId()));
         seckillGoods.setStockCount(seckillGoods.getStockCount()-1);
-        boolean result = seckillGoodsService.update(new UpdateWrapper<SeckillGoods>().setSql("stock_count="+ "stock_count - 1")
+
+        boolean result = seckillGoodsService.update(new UpdateWrapper<SeckillGoods>()
+                .setSql("stock_count="+ "stock_count - 1")
                 .eq("goods_id",goods.getId()).gt("stock_count",0));
         if(!result){
             return null;
@@ -71,9 +76,11 @@ public class IOrderServiceImpl extends ServiceImpl<IOrderMapper, Order> implemen
         seckillOrder.setOrderId(order.getId());
         seckillOrder.setGoodsId(goods.getId());
         seckillOrderService.save(seckillOrder);
+        //保存抢到商品的用户
         redisTemplate.opsForValue().set("order:"+user.getId()+":"+goods.getId(),seckillOrder);
         return order;
-
-
     }
+
+
+
 }

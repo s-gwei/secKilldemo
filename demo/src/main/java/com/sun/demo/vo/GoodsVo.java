@@ -24,6 +24,8 @@ public class GoodsVo extends Goods {
 
 	private BigDecimal seckillPrice;
 	private Integer stockCount;
+	private Integer count;
+	private Integer version;
 	private Date startDate;
 	private Date endDate;
 }

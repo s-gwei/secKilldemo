@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sun.demo.mapper.SeckillGoodsMapper;
 import com.sun.demo.pojo.SeckillGoods;
 import com.sun.demo.service.ISeckillGoodsService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
@@ -20,5 +21,13 @@ import org.springframework.stereotype.Service;
 @Service
 public class SeckillGoodsServiceImpl extends ServiceImpl<SeckillGoodsMapper, SeckillGoods> implements ISeckillGoodsService {
 
+    @Autowired
+    SeckillGoodsMapper seckillGoodsMapper;
 
+
+    @Override
+    public boolean updateCount(SeckillGoods seckillGoods) {
+       int a =  seckillGoodsMapper.updateCount(seckillGoods);
+        return false;
+    }
 }
