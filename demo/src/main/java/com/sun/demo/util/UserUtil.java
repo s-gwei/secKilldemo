@@ -88,10 +88,11 @@ public class UserUtil {
 			String response = new String(bout.toByteArray());
 			ObjectMapper mapper = new ObjectMapper();
 			RespBean respBean = mapper.readValue(response, RespBean.class);
-			String userTicket = ((String) respBean.getObj());
+			String str = ((String) respBean.getObj());
+			String[] s = str.split(";");
 			System.out.println("create userTicket : " + user.getId());
 
-			String row = user.getId() + "," + userTicket;
+			String row = user.getId() + "," + s[0]+","+s[1];
 			raf.seek(raf.length());
 			raf.write(row.getBytes());
 			raf.write("\r\n".getBytes());

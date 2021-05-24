@@ -9,4 +9,6 @@ import org.springframework.ui.Model;
 public interface IOrderService extends IService<Order> {
 
     Order seckill(User user, GoodsVo goods);
+
+    void createOrderByMq(Long goodsId, Long userId);
 }

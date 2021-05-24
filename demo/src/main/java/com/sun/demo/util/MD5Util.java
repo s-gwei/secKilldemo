@@ -1,6 +1,13 @@
 package com.sun.demo.util;
 
+import com.sun.demo.config.RedisConfig;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
+import org.springframework.data.redis.core.RedisTemplate;
+import redis.clients.jedis.Jedis;
+
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 public class MD5Util {
     public static String md5(String src){
@@ -34,5 +41,30 @@ public class MD5Util {
         System.out.println(formPassToDBPass("d3b1294a61a07da9b49b6e22b2cbd7f9","1a2b3c4d"));
 //        System.out.println(formPassToDBPass(inputPassToFromPass("123456"),salt));
         System.out.println(inputPassToDBPass("123456","1a2b3c4d"));
+        getMd5("18071739944",1);
+
+    }
+
+    public static  String getMd5(String userid, Integer id) {
+        String md5;
+        try {
+            Random r = new Random();
+            StringBuilder sb = new StringBuilder(16);
+            sb.append(r.nextInt(99999999)).append(r.nextInt(99999999));
+            int len = sb.length();
+            if (len < 16) {
+                for (int i = 0; i < 16 - len; i++) {
+                    sb.append("0");
+                }
+            }
+            String salt = sb.toString();
+            md5 = MD5Util.formPassToDBPass(userid, salt);
+            Jedis jedis = new Jedis("192.168.200.251", 6379);
+            jedis.set(userid +""+ id, md5);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "获取md5失败: " + e.getMessage();
+        }
+        return "获取md5信息为: " + md5;
     }
 }

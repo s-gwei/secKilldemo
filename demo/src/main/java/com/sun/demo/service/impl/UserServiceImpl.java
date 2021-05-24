@@ -18,6 +18,7 @@ import org.springframework.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -40,10 +41,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         if (limitNum == null) {
             //第一次调用放入redis中设置为0
             redisTemplate.opsForValue().set(limitKey, "0", 2, TimeUnit.SECONDS);
+//            redisTemplate.opsForValue().set(limitKey, "0");
         } else {
             //不是第一次调用每次+1
             limit = Integer.parseInt(limitNum) + 1;
             redisTemplate.opsForValue().set(limitKey, String.valueOf(limit), 2, TimeUnit.SECONDS);
+//            redisTemplate.opsForValue().set(limitKey, String.valueOf(limit));
         }
         return limit;//返回调用次数
     }
@@ -92,10 +95,35 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
              ticket = UUIDUtil.uuid();
             //将用户信息存入redis中
             redisTemplate.opsForValue().set("user:" + ticket, user);
+            //将链接url放在redis
+//            String md5 = getMd5(user.getId().toString(),1l);
             // request.getSession().setAttribute(ticket,user);
             CookieUtil.setCookie(request, response, "userTicket", ticket);
+//            return RespBean.success(ticket+";"+md5);
             return RespBean.success(ticket);
         }
+    }
+    public String getMd5(String userid, Long id) {
+        String md5;
+        try {
+            Random r = new Random();
+            StringBuilder sb = new StringBuilder(16);
+            sb.append(r.nextInt(99999999)).append(r.nextInt(99999999));
+            int len = sb.length();
+            if (len < 16) {
+                for (int i = 0; i < 16 - len; i++) {
+                    sb.append("0");
+                }
+            }
+            String salt = sb.toString();
+            md5 = MD5Util.formPassToDBPass(userid, salt);
+//            redisTemplate.opsForValue().set(userid + id, md5, 3, TimeUnit.SECONDS);
+            redisTemplate.opsForValue().set(userid + id, md5);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "获取md5失败: " + e.getMessage();
+        }
+        return  md5;
     }
 
     @Override
