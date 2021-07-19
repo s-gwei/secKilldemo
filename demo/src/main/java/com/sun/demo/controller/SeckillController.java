@@ -63,30 +63,7 @@ public class SeckillController {
     //每秒1个令牌生成10令牌，从输出可看出很平滑，这种实现将突发请求速率平均成固定请求速率。
     private RateLimiter rateLimiter = RateLimiter.create(10);
 
-    //生成md5值的方法
-    @RequestMapping("md5")
-    public String getMd5(String userid, Long id) {
-        String md5;
-        try {
-            Random r = new Random();
-            StringBuilder sb = new StringBuilder(16);
-            sb.append(r.nextInt(99999999)).append(r.nextInt(99999999));
-            int len = sb.length();
-            if (len < 16) {
-                for (int i = 0; i < 16 - len; i++) {
-                    sb.append("0");
-                }
-            }
-            String salt = sb.toString();
-            md5 = MD5Util.formPassToDBPass(userid, salt);
-//            redisTemplate.opsForValue().set(userid + id, md5, 3, TimeUnit.SECONDS);
-            redisTemplate.opsForValue().set(userid + id, md5);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "获取md5失败: " + e.getMessage();
-        }
-        return "获取md5信息为: " + md5;
-    }
+
 
     //开发一个秒杀方法 乐观锁防止超卖+ 令牌桶算法限流 + 单用户访问频率限制,
     //令牌桶算法限流 + 单用户访问频率限制，限制每个用户1s只能访问3次，实现单用户只能购买到一个秒杀商品
@@ -318,16 +295,38 @@ public class SeckillController {
 
 
 
-
-
-
-
-
-
-
-
-
-
+    //生成md5值的方法，隐藏请求url,同时判断是否到抢购时间
+    @RequestMapping("md5")
+    public String getMd5(String userid, Long id) {
+        //判断是否到抢购时间
+        String time = (String) redisTemplate.opsForValue().get(id+"time");
+        Long currentTime = System.currentTimeMillis();
+        if(currentTime < Long.parseLong(time)){
+            return null;
+        }
+        //生成动态的md5，隐藏抢购接口
+        String md5;
+        try {
+            Random r = new Random();
+            StringBuilder sb = new StringBuilder(16);
+            sb.append(r.nextInt(99999999)).append(r.nextInt(99999999));
+            int len = sb.length();
+            if (len < 16) {
+                for (int i = 0; i < 16 - len; i++) {
+                    sb.append("0");
+                }
+            }
+            String salt = sb.toString();
+            md5 = MD5Util.formPassToDBPass(userid, salt);
+//            redisTemplate.opsForValue().set(userid + id, md5, 3, TimeUnit.SECONDS);
+            //设置MD5存活时间，如果在一小时内用户没有抢购，则需要重新生成动态url
+            redisTemplate.opsForValue().set(userid + id, md5,60, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "获取md5失败: " + e.getMessage();
+        }
+        return "获取md5信息为: " + md5;
+    }
     /**
      * 下单接口：异步处理订单
      *
@@ -349,6 +348,7 @@ public class SeckillController {
             return "secKillFail";
         }
         //2.单用户调用调用接口的频率限制
+        //单用户，每秒最多请求三次
         Integer count = userService.saveUserCount(user.getId());
         log.info("用户截至该次的访问次数为: [{}]", count);
         //进行调用次数判断

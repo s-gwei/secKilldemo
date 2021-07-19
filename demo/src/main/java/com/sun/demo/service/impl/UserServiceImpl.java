@@ -40,12 +40,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         int limit =-1;
         if (limitNum == null) {
             //第一次调用放入redis中设置为0
-            redisTemplate.opsForValue().set(limitKey, "0", 2, TimeUnit.SECONDS);
+            redisTemplate.opsForValue().set(limitKey, "0", 1, TimeUnit.SECONDS);
 //            redisTemplate.opsForValue().set(limitKey, "0");
         } else {
             //不是第一次调用每次+1
             limit = Integer.parseInt(limitNum) + 1;
-            redisTemplate.opsForValue().set(limitKey, String.valueOf(limit), 2, TimeUnit.SECONDS);
+            redisTemplate.opsForValue().set(limitKey, String.valueOf(limit), 1, TimeUnit.SECONDS);
 //            redisTemplate.opsForValue().set(limitKey, String.valueOf(limit));
         }
         return limit;//返回调用次数
