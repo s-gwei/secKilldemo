@@ -207,6 +207,7 @@ public class IOrderServiceImpl extends ServiceImpl<IOrderMapper, Order> implemen
         // 导致第一个线程将第二个线程锁释放，第二个线程将第三个线程所释放
         //可能造成锁永久失效
         //生成唯一ID,
+        
         String clientId = UUID.randomUUID().toString();
         try {
             //设置10秒的锁过期时间，但是程序执行不一定是10秒，将锁设置值和设置过期时间两步变为原子操作
