@@ -363,12 +363,18 @@ public class SeckillController {
             return "抢购失败,当前秒杀活动过于火爆,请重试!";
         }
         //4，库存商品是否足够
-        SeckillGoods seckillGoods = seckillGoodsService.getOne(new QueryWrapper<SeckillGoods>()
-                .eq("goods_id", goodsId));
-        if (seckillGoods.getStockCount() - seckillGoods.getCount() < 1) {
-            log.info("商品库存已抢光");
-            return "商品库存已抢光";
+        Integer count1 = (Integer) redisTemplate.opsForValue().get(goodsId + "count");
+
+        if(count1 == null){
+            SeckillGoods seckillGoods = seckillGoodsService.getOne(new QueryWrapper<SeckillGoods>()
+                    .eq("goods_id", goodsId));
+            if (seckillGoods.getStockCount() - seckillGoods.getCount() < 1) {
+                log.info("商品库存已抢光");
+                return "商品库存已抢光";
+            }
+            count1 = seckillGoods.getCount();
         }
+
         //5,判断用户是否已购买
         if (!userIsBuy(model, user, goodsId)) {
             log.info("您已购买，请勿重复下单");
@@ -376,7 +382,7 @@ public class SeckillController {
         }
         // 有库存，则将log用户id和商品id封装为消息体传给消息队列处理
         // 注意这里的有库存和已经下单都是缓存中的结论，存在不可靠性，在消息队列中会查表再次验证
-        log.info("有库存：[{}]", seckillGoods.getCount());
+        log.info("有库存：[{}]", count1);
         try {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("goodsId", goodsId);
